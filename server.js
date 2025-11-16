@@ -10,8 +10,9 @@ const chatbotRoutes = require('./routes/chatbot');
 const app = express();
 app.use(cors({
      origin: [
-       'http://localhost:3000',
-       'scambot-frontend-gh63wg7x8-savanteens-projects.vercel.app'  // Add your actual Vercel URL here
+          'http://localhost:3000',
+    'https://scambot-frontend.vercel.app',
+    'https://scambot-frontend-qww26dgz8-savanteens-projects.vercel.app'
      ],
      credentials: true
    }));
@@ -50,3 +51,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 
 });
+
