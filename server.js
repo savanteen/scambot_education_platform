@@ -8,7 +8,13 @@ const userRoutes = require('./routes/users');
 const chatbotRoutes = require('./routes/chatbot');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+     origin: [
+       'http://localhost:3000',
+       'scambot-frontend-gh63wg7x8-savanteens-projects.vercel.app'  // Add your actual Vercel URL here
+     ],
+     credentials: true
+   }));
 app.use(express.json());
 
 // MongoDB Connection
@@ -42,4 +48,5 @@ app.get('/api/test', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+
 });
