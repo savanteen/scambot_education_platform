@@ -9,13 +9,11 @@ const chatbotRoutes = require('./routes/chatbot');
 
 const app = express();
 app.use(cors({
-     origin: [
-          'http://localhost:3000',
-    'https://scambot-frontend.vercel.app',
-    'https://scambot-frontend-qww26dgz8-savanteens-projects.vercel.app'
-     ],
-     credentials: true
-   }));
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false  // Note: changed to false when using origin: '*'
+}));
 app.use(express.json());
 
 // MongoDB Connection
@@ -51,4 +49,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 
 });
+
 
