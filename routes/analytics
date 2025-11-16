@@ -1,0 +1,30 @@
+const express = require('express');
+const router = express.Router();
+
+// Get analytics dashboard data
+router.get('/dashboard', async (req, res) => {
+  try {
+    res.json({
+      userStats: {
+        totalUsers: 10,
+        totalAttempts: 20,
+        completedAttempts: 15,
+        successRate: 75
+      },
+      dimensionAverages: {
+        trust_built: 65,
+        guarantee_made: 58,
+        urgency_created: 70,
+        skepticism_deflected: 45,
+        info_requested: 40,
+        payment_requested: 35,
+        scam_completed: 30
+      },
+      messageCount: 150
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+module.exports = router;
