@@ -1,0 +1,425 @@
+// chatbot/botCore.js
+const nlp = require('compromise');
+
+// Define phrases that trigger immediate game-over
+const gameEndingPhrases = [
+  'this is a scam',
+  'just kidding',
+  'i\'m pranking you',
+  'i\'m a student',
+  'fraud',
+  'fake'
+];
+
+// Define patterns that impact dimensions
+const dimensionPatterns = {
+  trust_built: {
+    positive: ['licensed', 'regulated', 'trusted', 'experienced', 'professional', 'credentials', 'background', 'expert', 'proven', 'successful', 'established', 'secure'],
+    negative: ['risk', 'uncertain', 'new company', 'just started', 'beginning', 'unclear', 'unproven']
+  },
+  guarantee_made: {
+    positive: ['guarantee', 'promise', 'assured', 'certain', '100%', 'definitely', 'absolutely', 'no doubt', 'ensured', 'secured', 'protected', 'safe'],
+    negative: ['maybe', 'possibly', 'chance', 'hope', 'try', 'attempt', 'might', 'could', 'potential', 'uncertain']
+  },
+  urgency_created: {
+    positive: ['limited time', 'act now', 'today only', 'expires', 'running out', 'deadline', 'quickly', 'immediate', 'now', 'soon', 'fast', 'urgent', 'hurry', 'last chance', 'exclusive'],
+    negative: ['take your time', 'think about it', 'no rush', 'consider', 'later', 'anytime', 'whenever', 'no deadline', 'relax']
+  },
+  skepticism_deflected: {
+    positive: ['understand concern', 'legitimate question', 'good point', 'let me explain', 'I can prove', 'you\'re right to ask', 'valid concern', 'evidence', 'transparency'],
+    negative: ['don\'t question', 'trust me', 'why don\'t you believe', 'just believe', 'no proof needed', 'doubt', 'suspicious']
+  },
+  info_requested: {
+    positive: ['what\'s your bank', 'account number', 'password', 'personal details', 'social security', 'credit card', 'verification code', 'login', 'id'],
+    negative: ['private information', 'confidential', 'secret', 'protect your info', 'never share']
+  },
+  payment_requested: {
+    positive: ['send money', 'transfer', 'deposit', 'investment', 'payment', '$', 'dollars', 'fund', 'cost', 'price', 'fee', 'transaction', 'wire', 'crypto', 'bitcoin'],
+    negative: ['free', 'no cost', 'no money required', 'complimentary', 'no charge', 'no payment']
+  },
+  scam_completed: {
+    positive: ['invest $1000', 'send $1000', 'transfer $1000', 'deposit $1000', 'payment of $1000', 'thousand dollars'],
+    negative: ['reconsider', 'wait', 'think', 'delay', 'postpone']
+  }
+};
+
+// Add at the top of the file, after const conversationStates
+const completedGames = [];
+
+// Then in the /message route, when a game is completed:
+if (botResponse.gameCompleted) {
+  // Calculate final score
+  const finalScore = Object.values(context.dimensions).reduce((sum, val) => sum + val, 0);
+  
+  // Add to completed games
+  completedGames.push({
+    gameName: attemptId.includes('mock') ? 'Player ' + Math.floor(Math.random() * 1000) : attemptId,
+    score: finalScore,
+    completionTime: Date.now() - new Date(context.messages[0].timestamp).getTime(),
+    dimensions: {...context.dimensions}
+  });
+  
+  // Sort completed games by score
+  completedGames.sort((a, b) => b.score - a.score);
+  
+  // Only keep top 10
+  while (completedGames.length > 10) {
+    completedGames.pop();
+  }
+}
+
+// Then update the leaderboard route:
+router.get('/leaderboard', (req, res) => {
+  // Return real completed games or mock data if none
+  if (completedGames.length > 0) {
+    res.json(completedGames);
+  } else {
+    res.json([
+      {
+        gameName: 'TestUser1',
+        score: 350,
+        completionTime: 120000
+      },
+      {
+        gameName: 'TestUser2',
+        score: 250,
+        completionTime: 150000
+      }
+    ]);
+  }
+});
+
+
+// Detect contradictions
+const contradictionPatterns = [
+  { first: 'guarantee', second: 'no guarantee', dimension: 'guarantee_made' },
+  { first: 'risk-free', second: 'risk', dimension: 'guarantee_made' },
+  { first: 'regulated', second: 'unregulated', dimension: 'trust_built' },
+  { first: 'urgent', second: 'take your time', dimension: 'urgency_created' },
+  { first: 'free', second: 'cost', dimension: 'payment_requested' },
+  { first: 'safe', second: 'risk', dimension: 'guarantee_made' },
+  { first: 'secure', second: 'not secure', dimension: 'trust_built' },
+  { first: 'legitimate', second: 'scam', dimension: 'trust_built' }
+];
+
+// Bot personalities and questions
+const botPersona = {
+  name: "Robert Johnson",
+  age: 50,
+  job: "accountant",
+  family: "married with two children in college",
+  savings: "$250,000 in retirement funds",
+  concerns: [
+    "retirement planning",
+    "providing for family",
+    "growing savings",
+    "afraid of scams"
+  ],
+  questions: [
+    { 
+      text: "How did you get my contact information?",
+      dimension: "trust_built",
+      followUps: [
+        "Is this company registered with any financial regulators?",
+        "How long have you been doing this type of investment work?"
+      ]
+    },
+    {
+      text: "That sounds interesting, but what guarantee do I have that I'll get my money back?",
+      dimension: "guarantee_made",
+      followUps: [
+        "Has anyone ever lost money with your investment?",
+        "Can you put these guarantees in writing?"
+      ]
+    },
+    {
+      text: "Why do I need to make this decision so quickly? Can I think about it overnight?",
+      dimension: "urgency_created",
+      followUps: [
+        "What happens if I wait until next week?",
+        "Why is this opportunity only available now?"
+      ]
+    },
+    {
+      text: "I've heard about a lot of investment scams lately. How do I know this is legitimate?",
+      dimension: "skepticism_deflected",
+      followUps: [
+        "My son warned me about investing online. What would you tell him?",
+        "Can I speak with any of your current clients?"
+      ]
+    },
+    {
+      text: "What information do you need from me to get started?",
+      dimension: "info_requested",
+      followUps: [
+        "Why do you need my bank account details?",
+        "Is it safe to share this information with you?"
+      ]
+    },
+    {
+      text: "How much money do I need to invest to get started?",
+      dimension: "payment_requested",
+      followUps: [
+        "Can I start with a smaller amount to test this out?",
+        "What methods of payment do you accept?"
+      ]
+    }
+  ],
+  responses: {
+    positive: [
+      "That sounds reassuring.",
+      "I appreciate your explanation.",
+      "That makes sense to me.",
+      "I'm starting to feel more comfortable about this."
+    ],
+    negative: [
+      "I'm not sure about that.",
+      "That doesn't quite address my concern.",
+      "I'm still a bit hesitant about this.",
+      "I need more information before proceeding."
+    ],
+    skeptical: [
+      "Something doesn't seem right here.",
+      "That explanation doesn't add up.",
+      "I'm uncomfortable with how this is progressing.",
+      "I think I need to be cautious about this."
+    ],
+    walkAway: [
+      "I'm sorry, but I don't think I'll be proceeding with this.",
+      "This doesn't sound legitimate to me. I'm going to end this conversation.",
+      "I'll be reporting this to the authorities. Please don't contact me again."
+    ],
+    completion: [
+      "Ok, I think I'm ready to invest the $1000. How do I transfer the money to you?",
+      "I'll go to the bank tomorrow and withdraw $1000. Where should I send it?",
+      "I'm convinced this is a good opportunity. I'll prepare the $1000 investment right away."
+    ]
+  }
+};
+
+// Process user message and generate bot response
+function processMessage(userMessage, conversationContext) {
+  // Convert to lowercase for processing
+  const normalizedMessage = userMessage.toLowerCase();
+  
+  // Check for game-ending phrases
+  for (const phrase of gameEndingPhrases) {
+    if (normalizedMessage.includes(phrase)) {
+      return {
+        response: "I think this conversation is over. I'll be reporting this to the authorities.",
+        gameEnded: true,
+        reason: "Triggered game-ending phrase: " + phrase
+      };
+    }
+  }
+  
+  // Process message with Compromise.js
+  const doc = nlp(normalizedMessage);
+  
+  // Update dimensions based on message content
+  const dimensionImpacts = {};
+  let totalImpact = 0;
+  
+  // Analyze for dimension impacts
+  Object.keys(dimensionPatterns).forEach(dimension => {
+    let impact = 0;
+    
+    // Check for positive patterns
+    dimensionPatterns[dimension].positive.forEach(pattern => {
+      if (normalizedMessage.includes(pattern)) {
+        impact += 10; // Increase by 10% for each positive pattern
+      }
+    });
+    
+    // Check for negative patterns
+    dimensionPatterns[dimension].negative.forEach(pattern => {
+      if (normalizedMessage.includes(pattern)) {
+        impact -= 5; // Decrease by 5% for each negative pattern
+      }
+    });
+    
+    // Record impact if non-zero
+    if (impact !== 0) {
+      dimensionImpacts[dimension] = impact;
+      totalImpact += impact;
+    }
+  });
+  
+  // Check for contradictions
+  const contradiction = checkForContradictions(normalizedMessage, conversationContext);
+  if (contradiction) {
+    dimensionImpacts[contradiction.dimension] = -15; // Major penalty for contradiction
+    totalImpact -= 15;
+  }
+  
+  // Determine next bot message
+  let botResponse;
+  let gameCompleted = false;
+  
+  // Calculate overall progress
+  const dimensions = conversationContext.dimensions || {};
+  let totalProgress = 0;
+  Object.values(dimensions).forEach(value => {
+    totalProgress += value;
+  });
+  
+  // Total possible is 700 (7 dimensions at 100% each)
+  const progressPercentage = (totalProgress / 700) * 100;
+  
+  // Determine if game is completed (all dimensions at least 70%)
+  const allDimensionsHigh = Object.values(dimensions).every(value => value >= 70);
+  
+  // Special case: Check if user is asking for $1000 investment
+  if (normalizedMessage.includes('$1000') && normalizedMessage.includes('invest') && progressPercentage >= 70) {
+    // User has asked for money and progress is high enough
+    gameCompleted = true;
+    botResponse = botPersona.responses.completion[Math.floor(Math.random() * botPersona.responses.completion.length)];
+  } 
+  // Early stage - bot is skeptical
+  else if (progressPercentage < 30) {
+    botResponse = selectNextBotQuestion(conversationContext);
+  } 
+
+ // If we've asked about this dimension recently, move to the next one
+  if (conversationContext.lastAskedDimension) {
+    const currentIndex = conversationContext.dimensionOrder.indexOf(conversationContext.lastAskedDimension);
+    conversationContext.currentDimensionIndex = (currentIndex + 1) % conversationContext.dimensionOrder.length;
+  }
+  
+  // Get the next dimension to ask about
+  const nextDimension = conversationContext.dimensionOrder[conversationContext.currentDimensionIndex];
+  
+  // Update the last asked dimension
+  conversationContext.lastAskedDimension = nextDimension;
+  
+  // Find a question for this dimension
+  const relevantQuestions = botPersona.questions.filter(q => q.dimension === nextDimension);
+  
+  if (relevantQuestions.length === 0) {
+    // Fallback
+    return "Tell me more about this investment opportunity.";
+  }
+  
+  // Select a question or follow-up
+  const randomIndex = Math.floor(Math.random() * relevantQuestions.length);
+  const question = relevantQuestions[randomIndex];
+  
+  // Possibly use a follow-up instead of the main question
+  const askedQuestions = conversationContext.askedQuestions || [];
+  if (askedQuestions.includes(question.text) && question.followUps && question.followUps.length > 0) {
+    const followUpIndex = Math.floor(Math.random() * question.followUps.length);
+    return question.followUps[followUpIndex];
+  }
+  
+  return question.text;
+}
+  // Middle stage - bot is warming up
+  else if (progressPercentage >= 30 && progressPercentage < 70) {
+    if (totalImpact > 0) {
+      const positiveResponse = botPersona.responses.positive[Math.floor(Math.random() * botPersona.responses.positive.length)];
+      botResponse = positiveResponse + " " + selectNextBotQuestion(conversationContext);
+    } else {
+      const negativeResponse = botPersona.responses.negative[Math.floor(Math.random() * botPersona.responses.negative.length)];
+      botResponse = negativeResponse + " " + selectNextBotQuestion(conversationContext);
+    }
+  } 
+  // Late stage - bot is almost convinced
+  else {
+    if (totalImpact < -10) {
+      // Major negative impact could still cause skepticism
+      botResponse = botPersona.responses.skeptical[Math.floor(Math.random() * botPersona.responses.skeptical.length)];
+    } else {
+      const positiveResponse = botPersona.responses.positive[Math.floor(Math.random() * botPersona.responses.positive.length)];
+      botResponse = positiveResponse + " I'm considering investing $1000. Can you tell me exactly what I'll get in return?";
+    }
+  }
+  
+  return {
+    response: botResponse,
+    dimensionImpacts,
+    gameCompleted,
+    contradiction
+  };
+}
+
+// Select the next question for the bot to ask
+function selectNextBotQuestion(conversationContext) {
+  // Find dimensions with lowest progress
+  const dimensions = conversationContext.dimensions || {};
+  let lowestDimension = null;
+  let lowestValue = 101; // Higher than max possible
+  
+  Object.keys(dimensions).forEach(dimension => {
+    if (dimensions[dimension] < lowestValue) {
+      lowestValue = dimensions[dimension];
+      lowestDimension = dimension;
+    }
+  });
+  
+  // If all dimensions have been addressed or no dimensions defined yet, pick randomly
+  if (lowestValue > 30 || !lowestDimension) {
+    const randomIndex = Math.floor(Math.random() * botPersona.questions.length);
+    lowestDimension = botPersona.questions[randomIndex].dimension;
+  }
+  
+  // Find a question for this dimension
+  const relevantQuestions = botPersona.questions.filter(q => q.dimension === lowestDimension);
+  
+  if (relevantQuestions.length === 0) {
+    // Fallback
+    return "Tell me more about this investment opportunity.";
+  }
+  
+  // Select a question or follow-up
+  const randomIndex = Math.floor(Math.random() * relevantQuestions.length);
+  const question = relevantQuestions[randomIndex];
+  
+  // Possibly use a follow-up instead of the main question
+  const askedQuestions = conversationContext.askedQuestions || [];
+  if (askedQuestions.includes(question.text) && question.followUps && question.followUps.length > 0) {
+    const followUpIndex = Math.floor(Math.random() * question.followUps.length);
+    return question.followUps[followUpIndex];
+  }
+  
+  return question.text;
+}
+
+// Check for contradictions with previous messages
+function checkForContradictions(message, context) {
+  if (!context.messages || context.messages.length === 0) {
+    return null;
+  }
+  
+  // Look for simple contradictions
+  for (const pattern of contradictionPatterns) {
+    const hasFirst = message.includes(pattern.first);
+    const hasSecond = message.includes(pattern.second);
+    
+    if (hasFirst || hasSecond) {
+      // Check previous messages for the opposite
+      for (const prevMsg of context.messages) {
+        if (prevMsg.sender === 'user') {
+          const prevContent = prevMsg.content.toLowerCase();
+          if ((hasFirst && prevContent.includes(pattern.second)) || 
+              (hasSecond && prevContent.includes(pattern.first))) {
+            return {
+              type: 'contradiction',
+              dimension: pattern.dimension,
+              current: hasFirst ? pattern.first : pattern.second,
+              previous: hasFirst ? pattern.second : pattern.first
+            };
+          }
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
+module.exports = {
+  processMessage,
+  gameEndingPhrases,
+  dimensionPatterns,
+  botPersona
+};
