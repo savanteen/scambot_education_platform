@@ -57,3 +57,13 @@ app.listen(PORT, '0.0.0.0', () => {  // Also add '0.0.0.0' here
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
+
+// Keep the process alive
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, but staying alive...');
+});
+
+// Ping yourself to stay active
+setInterval(() => {
+  console.log('🟢 Server heartbeat:', new Date().toISOString());
+}, 30000); // Every 30 seconds
