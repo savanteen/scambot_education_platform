@@ -1,0 +1,54 @@
+// models/Attempt.js
+const mongoose = require('mongoose');
+
+const attemptSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true
+  },
+  gameName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  score: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100
+  },
+  completionTime: {
+    type: Number,
+    required: true // Time in milliseconds
+  },
+  dimensions: {
+    rapport_built: { type: Number, default: 0 },
+    trust_built: { type: Number, default: 0 },
+    guarantee_made: { type: Number, default: 0 },
+    skepticism_deflected: { type: Number, default: 0 },
+    urgency_created: { type: Number, default: 0 },
+    info_requested: { type: Number, default: 0 },
+    payment_requested: { type: Number, default: 0 }
+  },
+  attemptNumber: {
+    type: Number,
+    required: true
+  },
+  gameResult: {
+    type: String,
+    enum: ['success', 'failed', 'timeout'],
+    required: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Index for faster queries
+attemptSchema.index({ email: 1, score: -1, completionTime: 1 });
+attemptSchema.index({ timestamp: -1 });
+
+module.exports = mongoose.model('Attempt', attemptSchema);
