@@ -13,6 +13,7 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'https://6919dbb20bc0e0d1e6e8c91f--scamboteducation.netlify.app/'
+    'https://6919e26589d6820008adce2d--scamboteducation.netlify.app/'
   ],
   credentials: true
 }));
@@ -67,4 +68,5 @@ process.on('SIGTERM', () => {
 setInterval(() => {
   console.log('🟢 Server heartbeat:', new Date().toISOString());
 }, 30000); // Every 30 seconds
+
 
