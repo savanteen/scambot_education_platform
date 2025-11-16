@@ -186,22 +186,21 @@ const ChatInterface = ({ userId, userEmail, userObj }) => {
   };
 
   const submitToLeaderboard = async (score, analyticsData, reason) => {
-    try {
-      const completionTime = analyticsData.endTime - analyticsData.startTime;
-
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/chatbot/leaderboard`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userObj?.userId || userId,
-          email: userEmail,
-          gameName: userId,
-          score,
-          completionTime,
-          dimensions,
-          gameResult: reason
-        })
-      });
+  try {
+    const completionTime = analyticsData.endTime - analyticsData.startTime;
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/chatbot/leaderboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: userObj?.userId || userId,
+        email: userEmail,
+        gameName: userId,
+        score,
+        completionTime,
+        dimensions,
+        gameResult: reason
+      })
+    });
 
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
@@ -472,27 +471,27 @@ const startGame = async () => {
     return dimensions[dimension] || 0;
   };
   
-  const resetLeaderboard = async () => {
-    try {
-      const passcode = "resetNYJC";
-      
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/chatbot/reset-leaderboard`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode }),
-      });
-      
-      if (response.ok) {
-        alert('Leaderboard reset successfully!');
-        window.location.reload();
-      } else {
-        alert('Failed to reset leaderboard. Invalid passcode.');
-      }
-    } catch (error) {
-      console.error('Error resetting leaderboard:', error);
-      alert('Error resetting leaderboard: ' + error.message);
+const resetLeaderboard = async () => {
+  try {
+    const passcode = "resetNYJC";
+    
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/chatbot/reset-leaderboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passcode }),
+    });
+    
+    if (response.ok) {
+      alert('Leaderboard reset successfully!');
+      window.location.reload();
+    } else {
+      alert('Failed to reset leaderboard. Invalid passcode.');
     }
-  };
+  } catch (error) {
+    console.error('Error resetting leaderboard:', error);
+    alert('Error resetting leaderboard: ' + error.message);
+  }
+};
 
   return (
     <div className="flex flex-col md:flex-row gap-4">
