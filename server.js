@@ -7,9 +7,17 @@ require('dotenv').config();
 const userRoutes = require('./routes/users');
 const chatbotRoutes = require('./routes/chatbot');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const app = express(); // ← You missed this line!
+
+app.use(cors({
+  origin: [
+    'http://localhost:3000', 
+    'https://scambot-education-platform.vercel.app'
+  ],
+  credentials: true
+}));
+
+app.use(express.json()); // ← You missed this line too!
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
@@ -41,5 +49,5 @@ app.get('/api/test', (req, res) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`); // ← Fixed syntax here
 });
