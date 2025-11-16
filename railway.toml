@@ -2,5 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "cp package-backend.js package.json && node server.js"
 restartPolicyType = "always"
